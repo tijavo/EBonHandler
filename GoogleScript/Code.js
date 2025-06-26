@@ -44,9 +44,9 @@ function addBill(bill,name,date ) {
         }
         sheet.appendRow([article, price.toFixed(2), type,count.toFixed(2)]);
     }
-    sheet.getRange(1, 1, 1, 3).setFontWeight("bold");
-    sheet.getRange(1, 1, 1, 3).setBackground("#f0f0f0");
-    sheet.getRange(1, 1, sheet.getLastRow(), 3).setNumberFormat("#,##0.00");
+    sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
+    sheet.getRange(1, 1, 1, 4).setBackground("#f0f0f0");
+    sheet.getRange(1, 1, sheet.getLastRow(), 4).setNumberFormat("#,##0.00");
 }
 
 
@@ -58,11 +58,20 @@ function checkForNewEmails() {
 
     messages.forEach(message => {
       const author = message.getFrom();
+      if(author.includes('edeka')){
+        console.log(author)
+      }
       const subject = message.getSubject();
-      if(author == 'REWE eBon <ebon@mailing.rewe.de>'){
+      if(author == 'REWE eBon <ebon@mailing.rewe.de>'|| author == 'EDEKA <info@post.edeka.de>'){
+
+        var market = 'REWE';
+        if(author == 'EDEKA <info@post.edeka.de>'){
+          market = 'EDEKA';
+        }
+
         const attachments = message.getAttachments();
         attachments.forEach(attachment => {
-          console.log(attachment.getContentType())
+          console.log(attachment)
           if (attachment.getContentType() === 'application/octet-stream') {
             const payload = {
               'file': attachment.copyBlob()
@@ -76,13 +85,40 @@ function checkForNewEmails() {
 
             var billName = subject;
             var date = '0';
-            const datePattern = /(\d{1,2}\.\d{1,2}\.\d{4})/;
-            const match = subject.match(datePattern);
-            if (match) {
-                billName = 'REWE' + match[1]; // '31.05.2025'
-                date = match[1];
+
+            var response;
+            if(market == 'REWE'){
+              //create name
+              const datePattern = /(\d{1,2}\.\d{1,2}\.\d{4})/;
+              const match = subject.match(datePattern);
+              if (match) {
+                  billName = market + match[1]; // '31.05.2025'
+                  date = match[1];
+              }
+              //use parser
+              const rewe_response = UrlFetchApp.fetch('https://ebon.tijavo.com/upload/rewe', options);
+              response = rewe_response;
+            }else if(market == 'EDEKA'){
+              //create name
+              const attachmentName = attachment.getName();
+              const datePattern = /(\d{4})-(\d{2})-(\d{2})/;
+              const match = attachmentName.match(datePattern);
+              if (match) {
+                console.log(match)
+                const year = match[1];
+                const month = match[2];
+                const day = match[3];
+
+                const formattedDate = `${day}.${month}.${year}`;
+                billName = market + formattedDate;
+                date = formattedDate;
+              }
+              
+              //use parser
+              const edeka_response = UrlFetchApp.fetch('https://ebon.tijavo.com/upload/edeka', options);
+              response = edeka_response;
             }
-            const response = UrlFetchApp.fetch('https://ebon.tijavo.com/upload-pdf', options);
+
             Logger.log(response.getContentText());
             if (response.getResponseCode() === 200) {
               console.log("PDF successfully uploaded");
@@ -126,6 +162,24 @@ function hideAllSheetsExceptMain() {
     }
   });
   console.log("All sheets except 'Main' have been hidden.");
+}
+
+function testLogic(){
+    const attachmentName = 'Kassenbon_2025-06-26_10.09.pdf';
+    const datePattern = /(\d{4})-(\d{2})-(\d{2})/;
+    const match = attachmentName.match(datePattern);
+    const market = 'EDEKA'
+    if (match) {
+      console.log(match)
+      const year = match[1];
+      const month = match[2];
+      const day = match[3];
+
+      const formattedDate = `${day}.${month}.${year}`;
+      billName = market + formattedDate;
+      date = formattedDate;
+  }
+    console.log(billName,date)
 }
 
 function mergeAllSheets(){
