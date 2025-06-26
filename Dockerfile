@@ -8,7 +8,9 @@ RUN apt-get update \
   && pip3 install --upgrade pip
 
 COPY requirements.txt /flask/requirements_additional.txt
+
 RUN python3 -m pip install --upgrade pip
+
 RUN pip3 install -r /flask/requirements_additional.txt
 
 ADD Flask_backend /flask
