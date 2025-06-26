@@ -62,21 +62,20 @@ function checkForNewEmails() {
         console.log(author)
       }
       const subject = message.getSubject();
-      if(author == 'REWE eBon <ebon@mailing.rewe.de>'|| author == 'EDEKA <info@post.edeka.de>'){
+      if(author == 'REWE eBon <ebon@mailing.rewe.de>'|| author == 'EDEKA <info@post.edeka.de>' || author == 'Jasper Fashion <jaspershopping13@gmail.com>'){
 
         var market = 'REWE';
-        if(author == 'EDEKA <info@post.edeka.de>'){
+        if(author == 'EDEKA <info@post.edeka.de>'|| author == 'Jasper Fashion <jaspershopping13@gmail.com>'){
           market = 'EDEKA';
         }
 
         const attachments = message.getAttachments();
         attachments.forEach(attachment => {
-          console.log(attachment)
-          if (attachment.getContentType() === 'application/octet-stream') {
+            console.log(attachment.getContentType())
+          if (attachment.getContentType() === 'application/octet-stream' || attachment.getContentType() === 'application/pdf') {
             const payload = {
               'file': attachment.copyBlob()
             };
-
             const options = {
               method: 'post',
               payload: payload, // automatisch multipart/form-data
@@ -99,6 +98,7 @@ function checkForNewEmails() {
               const rewe_response = UrlFetchApp.fetch('https://ebon.tijavo.com/upload/rewe', options);
               response = rewe_response;
             }else if(market == 'EDEKA'){
+              console.log(market)
               //create name
               const attachmentName = attachment.getName();
               const datePattern = /(\d{4})-(\d{2})-(\d{2})/;
@@ -112,7 +112,13 @@ function checkForNewEmails() {
                 const formattedDate = `${day}.${month}.${year}`;
                 billName = market + formattedDate;
                 date = formattedDate;
+              }else{
+                console.error('No Match')
+                billName = attachmentName
+                date = '0';
               }
+
+              console.log(billName)
               
               //use parser
               const edeka_response = UrlFetchApp.fetch('https://ebon.tijavo.com/upload/edeka', options);
