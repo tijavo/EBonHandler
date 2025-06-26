@@ -1,4 +1,4 @@
-const spreadsheetId = "YOUR SPREADSHEET ID HERE"; // Replace with your actual spreadsheet ID
+const spreadsheetId = "1A812LiO5geOfTyClrs2ZTThbsiJcOsw3bFbepM584hk";
 
 
 function addBill(bill,name,date ) {
@@ -32,21 +32,21 @@ function addBill(bill,name,date ) {
     
     mainSheet.appendRow([date,name, sum.toFixed(2), count, "=HYPERLINK(\"#gid=" + sheet.getSheetId() + "\", \"Zum Sheet\")"]);
 
-    sheet.appendRow(["Artikel", "Preis", "Typ"]);
+    sheet.appendRow(["Artikel", "Preis", "Typ","Anzahl"]);
     for (var i = 0; i < bill.length; i++) {
         let article = bill[i][0];
         let price = parseFloat(bill[i][1].replace(",", "."));
         let type = bill[i][2];
+        let count = parseFloat(bill[i][3].replace(",", "."));
         if (isNaN(price)) {
             console.log("Skipping invalid value: " + bill[i][1]);
             continue; // Skip invalid values
         }
-        sheet.appendRow([article, price.toFixed(2), type]);
+        sheet.appendRow([article, price.toFixed(2), type,count.toFixed(2)]);
     }
     sheet.getRange(1, 1, 1, 3).setFontWeight("bold");
     sheet.getRange(1, 1, 1, 3).setBackground("#f0f0f0");
     sheet.getRange(1, 1, sheet.getLastRow(), 3).setNumberFormat("#,##0.00");
-    sheet.hideSheet(); // Hide the new sheet by default
 }
 
 
@@ -91,6 +91,7 @@ function checkForNewEmails() {
               if (bill && bill.length > 0) {
                 console.log("Bill data received, adding to spreadsheet");
                 addBill(bill, billName, date);
+                message.markRead();  // Optional: als gelesen markieren
               } else {
                 console.error("No bill data found in response");
               }
@@ -102,7 +103,6 @@ function checkForNewEmails() {
         });
       }
 
-      message.markRead();  // Optional: als gelesen markieren
     });
 
     //thread.markRead();  // Optional: ganze Konversation als gelesen markieren
@@ -126,4 +126,34 @@ function hideAllSheetsExceptMain() {
     }
   });
   console.log("All sheets except 'Main' have been hidden.");
+}
+
+function mergeAllSheets(){
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const mainSheet = spreadsheet.getSheetByName("Main");
+  const newSheet = spreadsheet.insertSheet("Merged Bills");
+  newSheet.appendRow(["Datum","Rechnung", "Name", "Preis" ]);
+
+  const sheet_info = mainSheet.getRange(2, 1, mainSheet.getLastRow() - 1, 2).getValues();
+  const mergedSheetData = [];
+
+  sheet_info.forEach((info) => {
+    const sheetName = info[1];
+    const sheet = spreadsheet.getSheetByName(sheetName);
+    if (sheet) {
+      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+      data.forEach((row) => {
+        mergedSheetData.push([info[0], sheetName, row[0], row[1]]);
+      });
+    }else{
+      console.warn("Sheet not found: " + sheetName);
+    }
+  });
+
+  if (mergedSheetData.length > 0) {
+    newSheet.getRange(2, 1, mergedSheetData.length, mergedSheetData[0].length).setValues(mergedSheetData);
+    console.log("All sheets merged into 'Merged Bills'.");
+  } else {
+    console.log("No data to merge.");
+  }
 }
