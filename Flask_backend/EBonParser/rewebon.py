@@ -13,7 +13,10 @@ def parse_rewe_bon(pdf_path):
             parts = line.split()
             
             if len(parts) > 1:
-                if parts[-1] in ['B', 'A','*', '']:
+                if parts[1] == "Stk":
+                    if len(data) > 0:
+                        data[-1][3] = parts[0]
+                elif parts[-1] in ['B', 'A','*', '']:
                     if(parts[-1] == '*'):
                         parts.pop()
                         if len(parts) > 1:
@@ -23,7 +26,7 @@ def parse_rewe_bon(pdf_path):
                     product = ' '.join(parts[:-2])
                     price = parts[-2]
                     category = parts[-1]
-                    data.append([product, price, category])
+                    data.append([product, price, category,1])
             
 
     return data
